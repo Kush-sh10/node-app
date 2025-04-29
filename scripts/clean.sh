@@ -3,7 +3,7 @@
 echo "Cleaning temp and target deployment folders..."
 
 # Clean temp folder
-rm -rf /home/ubuntu/app_temp/*
+rm -rf /home/ubuntu/code-deploy-temp/*
 
 # Check CODEDEPLOY_GROUP_NAME to decide target
 if [[ "$DEPLOYMENT_GROUP_NAME" == "MyApp-Dev-Group" ]]; then
