@@ -67,6 +67,8 @@ jobs:
     if: github.ref == 'refs/heads/dev_branch'
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
       - name: Create Pull Request
         uses: repo-sync/pull-request@v2
         with:
