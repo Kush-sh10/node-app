@@ -1,21 +1,22 @@
 version: 0.0
 os: linux
+
 files:
-  - source: .
-    destination: /home/ubuntu/my-app1
+  - source: /
+    destination: /home/ubuntu/app_temp
 
 hooks:
   BeforeInstall:
-    - location: scripts/before_install.sh
-      timeout: 300
+    - location: scripts/clean.sh
+      timeout: 60
       runas: ubuntu
 
   AfterInstall:
-    - location: scripts/after_install.sh
-      timeout: 300
+    - location: scripts/install_dependencies.sh
+      timeout: 60
       runas: ubuntu
 
   ApplicationStart:
     - location: scripts/start_server.sh
-      timeout: 300
+      timeout: 60
       runas: ubuntu
