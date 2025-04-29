@@ -81,10 +81,8 @@ jobs:
     name: Deploy to Production
     needs: create-pull-request
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     environment:
       name: production  # Must match GitHub environment with reviewer set
-      url: https://your-production-url.com
 
     steps:
       - name: Configure AWS Credentials
