@@ -1,0 +1,101 @@
+name: Node.js CI/CD Pipeline
+
+on:
+  push:
+    branches: [ dev_branch, main ]
+
+jobs:
+  build-and-upload:
+    name: Build & Upload to S3
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/dev_branch'
+    environment: development
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Tests
+        run: npm test
+
+      - name: Zip Artifact
+        run: |
+          zip -r myapp.zip . -x ".git/*" -x "*.gitignore"
+
+      - name: Upload Artifact to S3
+        run: aws s3 cp myapp.zip s3://${{ secrets.S3_BUCKET }}/artifacts/myapp.zip --acl private
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+  deploy-development:
+    name: Deploy to Development
+    needs: build-and-upload
+    runs-on: ubuntu-latest
+    environment: development
+    if: github.ref == 'refs/heads/dev_branch'
+
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-southeast-1
+
+      - name: Deploy to Dev (CodeDeploy)
+        run: |
+          aws deploy create-deployment \
+            --application-name NodeApp \
+            --deployment-group-name DevDeploymentGroup \
+            --deployment-config-name CodeDeployDefault.OneAtATime \
+            --s3-location bucket=${{ secrets.S3_BUCKET }},key=artifacts/myapp.zip,bundleType=zip
+
+  create-pull-request:
+    name: Create PR to main
+    needs: deploy-development
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/dev_branch'
+
+    steps:
+      - name: Create Pull Request
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: "dev_branch"
+          destination_branch: "main"
+          pr_title: "Merge dev to main for Production Release"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-production:
+    name: Deploy to Production
+    needs: create-pull-request
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production  # Must match GitHub environment with reviewer set
+      url: https://your-production-url.com
+
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-southeast-1
+
+      - name: Deploy to Prod (CodeDeploy)
+        run: |
+          aws deploy create-deployment \
+            --application-name NodeApp \
+            --deployment-group-name ProdDeploymentGroup \
+            --deployment-config-name CodeDeployDefault.OneAtATime \
+            --s3-location bucket=${{ secrets.S3_BUCKET }},key=artifacts/myapp.zip,bundleType=zip
