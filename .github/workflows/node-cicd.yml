@@ -73,7 +73,7 @@ jobs:
           source_branch: "dev_branch"
           destination_branch: "main"
           pr_title: "Merge dev to main for Production Release"
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GH_TOKEN }}
 
   deploy-production:
     name: Deploy to Production
