@@ -1,5 +1,4 @@
 #!/bin/bash
-mkdir /home/ubuntu/my-app1
-cd /home/ubuntu/my-app1
+mkdir /home/ubuntu/node-app-final
+cd /home/ubuntu/node-app-final
 sudo npm install
-view raw
